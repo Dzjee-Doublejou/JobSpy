@@ -6,7 +6,7 @@ from itertools import cycle
 
 import numpy as np
 import requests
-import importlib
+import tls_client
 import urllib3
 from markdownify import markdownify as md
 from requests.adapters import HTTPAdapter, Retry
@@ -86,25 +86,21 @@ class RequestsRotating(RotatingProxySession, requests.Session):
         return requests.Session.request(self, method, url, **kwargs)
 
 
-class TLSRotating(RotatingProxySession):
+class TLSRotating(RotatingProxySession, tls_client.Session):
     def __init__(self, proxies=None):
         RotatingProxySession.__init__(self, proxies=proxies)
-        tls_module = importlib.import_module("tls_client")
-        self._session = tls_module.Session(random_tls_extension_order=True)
+        tls_client.Session.__init__(self, random_tls_extension_order=True)
 
     def execute_request(self, *args, **kwargs):
         if self.proxy_cycle:
             next_proxy = next(self.proxy_cycle)
             if next_proxy["http"] != "http://localhost":
-                self._session.proxies = next_proxy
+                self.proxies = next_proxy
             else:
-                self._session.proxies = {}
-        response = self._session.execute_request(*args, **kwargs)
+                self.proxies = {}
+        response = tls_client.Session.execute_request(self, *args, **kwargs)
         response.ok = response.status_code in range(200, 400)
         return response
-
-    def __getattr__(self, item):
-        return getattr(self._session, item)
 
 
 def create_session(
@@ -121,14 +117,7 @@ def create_session(
     :return: A session object
     """
     if is_tls:
-        try:
-            session = TLSRotating(proxies=proxies)
-        except (ImportError, OSError) as e:
-            raise RuntimeError(
-                "Failed to initialize tls-client session. If you are on ARM64/Linux, "
-                "recreate your virtualenv and reinstall dependencies so the platform-specific "
-                "tls-client shared library is installed."
-            ) from e
+        session = TLSRotating(proxies=proxies)
     else:
         session = RequestsRotating(
             proxies=proxies,
