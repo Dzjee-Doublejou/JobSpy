@@ -204,27 +204,6 @@ This searches the description/title and must include software, summer, 2025, one
 
 ---
 
-**Q: `OSError ... tls-client-arm64.so: cannot open shared object file` when importing `jobspy`?**  
-**A:** This usually means the `tls-client` native dependency was not installed correctly for your CPU/OS combination. Recreate the virtual environment and reinstall dependencies so `tls-client` can install the correct shared library for your platform. On ARM64 Linux, make sure you are using a Python version and wheel combination that `tls-client` supports.
-
-Recommended steps:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -U pip setuptools wheel
-pip install -U python-jobspy
-```
-
-If you are developing from this repo, install project dependencies in a clean environment instead of reusing an old venv:
-
-```bash
-pip install -U poetry
-poetry install
-```
-
----
-
 **Q: Received a response code 429?**  
 **A:** This indicates that you have been blocked by the job board site for sending too many requests. All of the job board sites are aggressive with blocking. We recommend:
 
